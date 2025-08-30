@@ -1,0 +1,63 @@
+# Firefox Profile Data (don't commit actual profile contents)
+profiles.ini
+*.default*/
+*.dev-edition-default*/
+
+# Backup Files
+*.backup
+*.backup.*
+user.js.backup*
+prefs.js.backup*
+userjs_backups/
+
+# Temporary Files
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# Log Files  
+*.log
+firefox.log
+console.log
+
+# Firefox Session Data (if accidentally copied)
+sessionstore.jsonlz4
+sessionstore-backups/
+crashes/
+minidumps/
+
+# Extension Development
+web-ext-artifacts/
+*.xpi
+
+# IDE/Editor Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS Specific
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+
+# Windows Specific  
+desktop.ini
+ehthumbs.db
+*.lnk
+
+# Linux Specific
+.directory
+
+# Test/Debug Files
+test-profile/
+debug/
+*.debug
+
+# Personal Notes (if you keep any)
+notes.txt
+personal-notes.md
+TODO.md
