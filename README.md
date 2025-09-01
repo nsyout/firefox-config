@@ -1,165 +1,270 @@
-# Personal Firefox Setup
+# Firefox Configuration
 
-Hardened Firefox configuration using [arkenfox user.js](https://github.com/arkenfox/user.js) with custom overrides for usability and performance.
+Privacy-hardened Firefox setup using [arkenfox user.js](https://github.com/arkenfox/user.js) with custom overrides optimized for usability.
 
-**Supported Systems:** macOS and Arch Linux
+**Supported:** macOS, Arch Linux  
+**Firefox Versions:** 115+ ESR, Latest Release
 
-## 🚀 Quick Setup
+## Quick Start
 
-**New machine deployment:**
 ```bash
 git clone <this-repo>
 cd firefox-config
-./deploy-firefox-setup-secure.sh  # Works on macOS and Arch Linux
+./deploy.sh
 ```
 
-**Update arkenfox (preserves your settings):**
-```bash
-# The updater.sh is downloaded during deployment
-./updater.sh -s
+The script:
+- Downloads latest arkenfox files
+- Creates Firefox profile if needed
+- Installs extension policies
+- Applies custom overrides
+- Sets up Flexoki theme
+
+## Components
+
+### Base Configuration (Arkenfox)
+- Privacy-focused defaults blocking tracking/fingerprinting
+- Hardened TLS/SSL settings
+- Disabled telemetry and data collection
+- HTTPS enforcement where possible
+
+### Custom Overrides
+Key modifications in `user-overrides.js`:
+
+**Session Management**
+- Keeps tabs on restart (vs arkenfox clearing)
+- Preserves history and cookies
+- Maintains form data
+
+**Compatibility**
+- vlaris.net exempted from fingerprinting protection
+- Kagi search suggestions enabled
+- WebGL and canvas access for specific sites
+
+**Performance**
+- HTTP/3 enabled
+- Increased connection limits (900 max, 30 per server)
+- JIT optimizations enabled
+- Accessibility services disabled (re-enable if needed)
+
+**UI/UX**
+- Native vertical tabs in sidebar
+- Compact density mode
+- Bookmarks toolbar always visible
+- Dark theme for developer tools
+- No hover delays on sidebar
+
+### Extensions (Auto-Install)
+Configured via `your-extensions-policies.json`:
+- uBlock Origin - Ad/tracker blocking
+- 1Password - Password management
+- Kagi Search - Search engine integration
+- linkding - Bookmark manager
+- Obsidian Web Clipper - Note capture
+- Harper Grammar - Grammar checking
+- readeck - Read-later service
+- SingleFile - Full page archival
+- UnTrap for YouTube - Clean YouTube UI
+- Dark Reader - Universal dark mode
+
+### Theme
+Flexoki color scheme (warm, paper-inspired):
+- Dark variant: `#100F0F` background
+- Light variant: `#FFFCF0` background
+- Applied via userChrome.css
+
+## File Structure
+
+```
+Repository:
+├── user-overrides.js                # Your custom preferences
+├── your-extensions-policies.json    # Extension configuration
+├── deploy.sh                        # Installation & verification script
+├── userChrome-flexoki-dark.css     # Dark theme
+└── userChrome-flexoki-light.css    # Light theme
+
+Downloaded (not tracked):
+├── user.js                          # Arkenfox base
+├── updater.sh                       # Arkenfox updater
+└── prefsCleaner.sh                  # Preference cleanup
 ```
 
-## 📋 What This Setup Does
+## Installation
 
-### 🔒 Security & Privacy (from arkenfox)
-- Blocks fingerprinting and tracking
-- Hardens TLS/SSL settings
-- Disables telemetry and data collection
-- Enforces HTTPS where possible
-
-### ⚙️ Custom Overrides (for usability)
-- **Session restore**: Remembers tabs on restart
-- **Keep browsing data**: History and cookies preserved
-- **Search integration**: Kagi search suggestions enabled
-- **Site compatibility**: vlaris.net fingerprinting exemption
-
-### 🚀 Performance Optimizations
-- Increased HTTP connection limits
-- Enhanced memory and cache settings
-- Disabled accessibility features (unless needed)
-- Faster rendering and JavaScript performance
-
-### 🎨 UI Customizations
-- **Vertical tabs**: Mozilla's native sidebar tabs
-- **Compact mode**: Smaller UI elements
-- **Instant sidebar**: No hover animation delays
-- **Bookmarks toolbar**: Always visible
-- **Dark dev tools**: Developer tools use dark theme
-
-### 📦 Auto-Installed Extensions (10)
-- **uBlock Origin** - Ad blocker
-- **1Password** - Password manager  
-- **Kagi Search** - Search integration
-- **linkding** - Bookmark manager
-- **Obsidian Web Clipper** - Save to Obsidian
-- **Harper Grammar** - Grammar checker
-- **readeck** - Read-later service
-- **SingleFile** - Save complete pages
-- **UnTrap for YouTube** - Clean YouTube experience
-- **Dark Reader** - Universal dark mode
-
-## 📁 File Structure
-
-```
-# Your repo (tracked in git):
-├── user-overrides.js                # Your custom settings (persistent)
-├── your-extensions-policies.json    # Extension auto-install config
-├── deploy-firefox-setup-secure.sh   # Deployment script (downloads arkenfox)
-├── verify-setup.sh                  # Verify deployment worked
-├── userChrome-flexoki-dark.css      # Dark theme
-└── userChrome-flexoki-light.css     # Light theme
-
-# Downloaded during deployment (not in git):
-├── user.js                          # Arkenfox base (auto-downloaded)
-├── updater.sh                       # Update arkenfox (from arkenfox repo)
-└── prefsCleaner.sh                  # Clean old prefs (from arkenfox repo)
-```
-
-## 🔧 Usage
-
-### Initial Setup
+### Prerequisites
 
 **macOS:**
-1. Install Firefox from [mozilla.org](https://www.mozilla.org/firefox/)
-2. Clone this repo: `git clone <your-repo-url>`
-3. Run `./deploy-firefox-setup-secure.sh`
-4. Launch Firefox (extensions install automatically)
+- Firefox installed from [mozilla.org](https://www.mozilla.org/firefox/)
+- Command line tools: `curl`, `bash`
 
 **Arch Linux:**
-1. Install Firefox: `sudo pacman -S firefox`
-2. Clone this repo: `git clone <your-repo-url>`
-3. Run `./deploy-firefox-setup-secure.sh`
-4. Launch Firefox (extensions install automatically)
+- Firefox: `sudo pacman -S firefox`
+- Standard tools already available
 
-**Note:** The script handles fresh Firefox installs that have never been launched.
+### Fresh Install
 
-### Updates
+1. Clone repository
+2. Run `./deploy.sh`
+3. Script handles:
+   - Profile creation if Firefox never launched
+   - Arkenfox download and setup
+   - Extension policy deployment (requires sudo)
+   - Theme installation
+   - Automatic verification of deployment
+4. Launch Firefox - extensions install on first run
+
+### Verification
+
+The deploy script automatically verifies the installation.
+
+For manual verification in Firefox:
+- `about:config` - Check key preferences
+- `about:debugging` - Verify extensions
+- `about:profiles` - Confirm correct profile
+
+## Maintenance
+
+### Update Arkenfox
+
+When arkenfox releases updates (monitor via RSS):
+
 ```bash
-# Update arkenfox user.js (monthly recommended)
-./updater.sh -s
+./updater.sh -s              # Silent update
+# Test Firefox functionality
+# Adjust user-overrides.js if needed
+git commit -am "Update overrides for arkenfox vXXX"
+```
 
-# Before major Firefox updates, clean old prefs
+### Clean Obsolete Preferences
+
+Before major Firefox updates:
+
+```bash
 ./prefsCleaner.sh
 ```
 
-### Verification
-```bash
-# Check if everything deployed correctly
-./verify-setup.sh
-```
+### Modify Settings
 
-## 🛠️ Customization
-
-### Adding Firefox Preferences
-Edit `user-overrides.js` and add:
+**Add custom preferences:**
 ```javascript
-user_pref("preference.name", value);
+// In user-overrides.js
+user_pref("browser.preference.name", value);
 ```
 
-### Adding Extensions
-1. Get extension ID from `about:debugging#/runtime/this-firefox`
-2. Add to `your-extensions-policies.json`:
+**Add extensions:**
 ```json
-"extension-id@domain.com": {
-  "installation_mode": "normal_installed", 
-  "install_url": "https://addons.mozilla.org/firefox/downloads/latest/extension-name/latest.xpi"
+// In your-extensions-policies.json
+"extension-id@developer": {
+  "installation_mode": "normal_installed",
+  "install_url": "https://addons.mozilla.org/firefox/downloads/latest/..."
 }
 ```
 
-### Site-Specific Issues
-- **Broken site**: Click shield icon → Disable Enhanced Tracking Protection
-- **Canvas errors**: Allow site exceptions when prompted
-- **SSL errors**: Check user-overrides.js for commented fixes
+Get extension IDs from `about:debugging#/runtime/this-firefox`
 
-## 🔍 Key Settings Explained
+## Troubleshooting
 
-### Privacy vs Usability Balance
-- **RFP disabled globally** but **FPP enabled** (better site compatibility)
-- **vlaris.net exempted** from fingerprinting protection
-- **Session data kept** (contrary to arkenfox defaults)
-- **Search suggestions enabled** for Kagi only
+### Profile Issues
 
-### Performance vs Security
-- **Accessibility disabled** (re-enable if using screen readers)
-- **Network optimizations** for faster loading
-- **JIT compilation enabled** (performance over security)
+**Wrong profile loading:**
+```bash
+firefox -P              # Profile manager
+about:profiles          # In Firefox
+```
 
-## 🆘 Troubleshooting
+**Profile not found:**
+- macOS: Check `~/Library/Application Support/Firefox/Profiles/`
+- Linux: Check `~/.mozilla/firefox/`
 
-### Extensions not installing
-- Check: `/Applications/Firefox.app/Contents/Resources/distribution/policies.json`
-- Extensions install on FIRST launch only
+### Extension Issues
 
-### Settings not applying  
-- Verify: `user.js` exists in Firefox profile
-- Check: `about:profiles` for correct profile usage
+**Not auto-installing:**
+- Verify policies.json exists:
+  - macOS: `/Applications/Firefox.app/Contents/Resources/distribution/`
+  - Arch: `/usr/lib/firefox/distribution/`
+- Extensions only install on FIRST launch after policy deployment
+- Check `about:policies` for active policies
 
-### Site compatibility issues
-- Use shield icon to disable protection per-site
-- Check arkenfox wiki for common fixes
+**Manual install fallback:**
+- Visit extension URLs in `your-extensions-policies.json`
+- Install directly from addons.mozilla.org
 
-## 📚 References
+### Site Compatibility
 
-- [arkenfox user.js](https://github.com/arkenfox/user.js) - Base privacy configuration
-- [Betterfox](https://github.com/yokoffing/Betterfox) - Performance optimizations inspiration
-- [Firefox Enterprise Policies](https://mozilla.github.io/policy-templates/) - Extension deployment
+**Broken functionality:**
+1. Click shield icon in address bar
+2. Turn off Enhanced Tracking Protection for site
+3. Or add to `privacy.resistFingerprinting.exemptedDomains`
+
+**Canvas/WebGL issues:**
+- Check `user-overrides.js` for canvas permissions
+- Some sites need explicit canvas access prompts
+
+**Video/Audio problems:**
+- WebRTC is disabled by default
+- Enable per-site if needed for video calls
+
+### Performance
+
+**Slow startup:**
+- Normal with many extensions
+- First launch after updates slower
+- Consider reducing extension count
+
+**High memory usage:**
+- Check `about:memory` for details
+- Arkenfox disables some memory optimizations for privacy
+- Adjust `browser.cache.memory.capacity` if needed
+
+## Technical Details
+
+### Arkenfox Integration
+
+The setup uses arkenfox's updater mechanism:
+1. Downloads latest user.js from GitHub
+2. Appends user-overrides.js
+3. Deploys merged configuration to profile
+
+This maintains arkenfox's security improvements while preserving customizations.
+
+### Policy Deployment
+
+Extension policies use Firefox's enterprise policy system:
+- Policies deployed to distribution directory
+- Requires sudo/admin access
+- Applies to all Firefox profiles on system
+
+### Profile Management
+
+Script handles multiple scenarios:
+- Existing profiles: Uses first *.default* profile
+- No profiles: Creates new profile via `-CreateProfile`
+- Never-run Firefox: Sets up profiles.ini correctly
+
+## Security Notes
+
+### What This Protects Against
+- Fingerprinting (with exceptions for specific sites)
+- Tracking cookies and beacons
+- Telemetry and usage analytics
+- Insecure connections
+- WebRTC IP leaks
+
+### Trade-offs Made
+- Some fingerprinting protection disabled for usability
+- Session data preserved (less privacy, more convenience)
+- JIT enabled (performance over security)
+- Search suggestions enabled (Kagi only)
+
+### Recommendations
+- Use different profiles for different threat models
+- Enable RFP (ResistFingerprinting) for maximum privacy
+- Review arkenfox wiki for additional hardening options
+- Keep Firefox and arkenfox updated regularly
+
+## References
+
+- [Arkenfox Wiki](https://github.com/arkenfox/user.js/wiki) - Detailed explanations
+- [Firefox Enterprise Policies](https://mozilla.github.io/policy-templates/) - Policy documentation
+- [Flexoki Theme](https://github.com/kepano/flexoki) - Color scheme details
+- [Betterfox](https://github.com/yokoffing/Betterfox) - Performance tweaks source

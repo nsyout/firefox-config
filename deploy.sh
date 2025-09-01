@@ -314,21 +314,52 @@ echo -e "${ORANGE}Step 5: Verifying deployment...${NC}"
 
 # Check that files were actually created
 if [ -f "$PROFILE_DIR/user.js" ]; then
-    echo -e "${GREEN}OK: user.js deployed${NC}"
+    echo -e "${GREEN}✓ user.js deployed${NC}"
+    
+    # Check if it's actually arkenfox
+    if grep -q "arkenfox user.js" "$PROFILE_DIR/user.js" 2>/dev/null; then
+        version=$(grep "version:" "$PROFILE_DIR/user.js" | head -1 | awk '{print $3}')
+        echo -e "${GREEN}✓ Arkenfox detected (version $version)${NC}"
+    fi
+    
+    # Check if overrides were merged
+    if grep -q "user-overrides.js" "$PROFILE_DIR/user.js" 2>/dev/null; then
+        echo -e "${GREEN}✓ User overrides merged${NC}"
+    fi
+    
+    # Check for key custom settings
+    if grep -q "sidebar.verticalTabs" "$PROFILE_DIR/user.js" 2>/dev/null; then
+        echo -e "${GREEN}✓ Custom settings applied${NC}"
+    fi
 else
-    echo -e "${RED}ERROR: user.js deployment failed${NC}"
+    echo -e "${RED}✗ user.js deployment failed${NC}"
 fi
 
 if [ -f "${DISTRIBUTION_DIR}/policies.json" ]; then
-    echo -e "${GREEN}OK: Extension policies deployed${NC}"
+    echo -e "${GREEN}✓ Extension policies deployed${NC}"
+    
+    # Count extensions if possible
+    if command -v python3 >/dev/null 2>&1; then
+        ext_count=$(python3 -c "
+import json
+with open('${DISTRIBUTION_DIR}/policies.json') as f:
+    data = json.load(f)
+    extensions = data.get('policies', {}).get('ExtensionSettings', {})
+    count = len([k for k in extensions.keys() if k != '*'])
+    print(count)
+" 2>/dev/null || echo "0")
+        if [ "$ext_count" -gt 0 ]; then
+            echo -e "${GREEN}✓ $ext_count extensions configured${NC}"
+        fi
+    fi
 else
-    echo -e "${RED}ERROR: Extension policies deployment failed${NC}"
+    echo -e "${RED}✗ Extension policies deployment failed${NC}"
 fi
 
 if [ -f "${CHROME_DIR}/userChrome.css" ]; then
-    echo -e "${GREEN}OK: Flexoki theme deployed${NC}"
+    echo -e "${GREEN}✓ Flexoki theme deployed${NC}"
 else
-    echo -e "${ORANGE}Warning: Theme deployment skipped (file not found)${NC}"
+    echo -e "${ORANGE}⚠ Theme not installed${NC}"
 fi
 
 #########################
@@ -338,20 +369,19 @@ fi
 echo ""
 echo -e "${GREEN}Firefox Setup Complete!${NC}"
 echo "================================================"
-echo -e "${BLUE}What was deployed:${NC}"
-echo "[OK] Extension Policies (10 extensions will auto-install)"
-echo "[OK] Arkenfox user.js (hardened privacy/security settings)"
-echo "[OK] Your user-overrides.js (custom preferences)"
-echo "[OK] Flexoki theme (userChrome.css)"
 echo ""
-echo -e "${ORANGE}Security Notes:${NC}"
-echo "- Files deployed with proper permissions"
-echo "- JSON validated before deployment"  
-echo "- Profile path sanitized"
-echo "- Extensions install on FIRST Firefox launch"
-echo "- Your profile: $(basename "$PROFILE_DIR")"
+echo -e "${BLUE}Profile configured:${NC} $(basename "$PROFILE_DIR")"
+echo -e "${BLUE}Profile location:${NC} $PROFILE_DIR"
 echo ""
-echo -e "${GREEN}Ready to launch Firefox!${NC}"
+echo -e "${ORANGE}Next steps:${NC}"
+echo "1. Launch Firefox - extensions will auto-install"
+echo "2. Verify settings in about:config"
+echo "3. Check vertical tabs in sidebar"
+echo ""
+echo -e "${ORANGE}Manual verification:${NC}"
+echo "- about:config → search 'sidebar.verticalTabs'"
+echo "- about:policies → check extension policies"
+echo "- about:debugging → verify extensions"
 
 #########################
 # 7. OPTIONAL LAUNCH    #
