@@ -51,7 +51,7 @@ echo -e "${ORANGE}Pre-flight Security Checks...${NC}"
 
 # Check we're in the right directory
 if [ ! -f "${SCRIPT_DIR}/user.js" ]; then
-    echo -e "${RED}❌ Not in arkenfox directory! user.js not found.${NC}"
+    echo -e "${RED}❌ Not in correct directory! user.js not found.${NC}"
     exit 1
 fi
 
