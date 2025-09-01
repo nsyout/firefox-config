@@ -2,17 +2,20 @@
 
 Hardened Firefox configuration using [arkenfox user.js](https://github.com/arkenfox/user.js) with custom overrides for usability and performance.
 
+**Supported Systems:** macOS and Arch Linux
+
 ## 🚀 Quick Setup
 
 **New machine deployment:**
 ```bash
 git clone <this-repo>
-cd arkenfox-user.js
-./deploy-firefox-setup-secure.sh
+cd firefox-config
+./deploy-firefox-setup-secure.sh  # Works on macOS and Arch Linux
 ```
 
 **Update arkenfox (preserves your settings):**
 ```bash
+# The updater.sh is downloaded during deployment
 ./updater.sh -s
 ```
 
@@ -58,22 +61,37 @@ cd arkenfox-user.js
 ## 📁 File Structure
 
 ```
-├── user.js                          # Arkenfox base (auto-updated)
+# Your repo (tracked in git):
 ├── user-overrides.js                # Your custom settings (persistent)
 ├── your-extensions-policies.json    # Extension auto-install config
-├── deploy-firefox-setup-secure.sh   # One-time deployment script  
-├── updater.sh                       # Update arkenfox (keeps overrides)
-├── prefsCleaner.sh                  # Clean old prefs before updates
-└── verify-setup.sh                  # Verify deployment worked
+├── deploy-firefox-setup-secure.sh   # Deployment script (downloads arkenfox)
+├── verify-setup.sh                  # Verify deployment worked
+├── userChrome-flexoki-dark.css      # Dark theme
+└── userChrome-flexoki-light.css     # Light theme
+
+# Downloaded during deployment (not in git):
+├── user.js                          # Arkenfox base (auto-downloaded)
+├── updater.sh                       # Update arkenfox (from arkenfox repo)
+└── prefsCleaner.sh                  # Clean old prefs (from arkenfox repo)
 ```
 
 ## 🔧 Usage
 
 ### Initial Setup
-1. Install Firefox
-2. Run `./deploy-firefox-setup-secure.sh`
-3. Launch Firefox (extensions install automatically)
-4. Verify settings in `about:config`
+
+**macOS:**
+1. Install Firefox from [mozilla.org](https://www.mozilla.org/firefox/)
+2. Clone this repo: `git clone <your-repo-url>`
+3. Run `./deploy-firefox-setup-secure.sh`
+4. Launch Firefox (extensions install automatically)
+
+**Arch Linux:**
+1. Install Firefox: `sudo pacman -S firefox`
+2. Clone this repo: `git clone <your-repo-url>`
+3. Run `./deploy-firefox-setup-secure.sh`
+4. Launch Firefox (extensions install automatically)
+
+**Note:** The script handles fresh Firefox installs that have never been launched.
 
 ### Updates
 ```bash

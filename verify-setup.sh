@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 ## Firefox Setup Verification Script
+## Supports macOS and Arch Linux
 
 set -e
 
@@ -11,6 +12,20 @@ readonly BLUE='\033[0;34m'
 readonly ORANGE='\033[0;33m'
 readonly NC='\033[0m'
 
+# Detect OS
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    OS="macos"
+    PROFILES_DIR="$HOME/Library/Application Support/Firefox/Profiles"
+    POLICIES_FILE="/Applications/Firefox.app/Contents/Resources/distribution/policies.json"
+elif [[ -f "/etc/arch-release" ]]; then
+    OS="arch"
+    PROFILES_DIR="$HOME/.mozilla/firefox"
+    POLICIES_FILE="/usr/lib/firefox/distribution/policies.json"
+else
+    echo -e "${RED}ERROR: Unsupported OS${NC}"
+    exit 1
+fi
+
 echo -e "${BLUE}🔍 Firefox Setup Verification${NC}"
 echo "================================================"
 
@@ -19,18 +34,17 @@ echo "================================================"
 #########################
 
 echo -e "${ORANGE}Step 1: Checking Firefox Profile...${NC}"
+echo "OS detected: $OS"
 
-FIREFOX_PROFILES_DIR="$HOME/Library/Application Support/Firefox/Profiles"
-
-if [ ! -d "$FIREFOX_PROFILES_DIR" ]; then
+if [ ! -d "$PROFILES_DIR" ]; then
     echo -e "${RED}❌ No Firefox profiles found!${NC}"
     exit 1
 fi
 
-echo "Firefox profiles directory: $FIREFOX_PROFILES_DIR"
+echo "Firefox profiles directory: $PROFILES_DIR"
 echo ""
 echo "Available profiles:"
-ls -la "$FIREFOX_PROFILES_DIR" | grep "^d" | while read -r line; do
+ls -la "$PROFILES_DIR" | grep "^d" | while read -r line; do
     profile_name=$(echo "$line" | awk '{print $NF}')
     if [[ "$profile_name" == *.default* ]]; then
         echo -e "  ${GREEN}✅ $profile_name (DEFAULT)${NC}"
@@ -40,7 +54,7 @@ ls -la "$FIREFOX_PROFILES_DIR" | grep "^d" | while read -r line; do
 done
 
 # Find the default profile
-PROFILE_DIR=$(find "$FIREFOX_PROFILES_DIR" -name "*.default*" -type d | head -1)
+PROFILE_DIR=$(find "$PROFILES_DIR" -name "*.default*" -type d | head -1)
 
 if [ -z "$PROFILE_DIR" ]; then
     echo -e "${RED}❌ No default profile found!${NC}"
@@ -125,8 +139,6 @@ fi
 
 echo ""
 echo -e "${ORANGE}Step 4: Checking Extension Policies...${NC}"
-
-POLICIES_FILE="/Applications/Firefox.app/Contents/Resources/distribution/policies.json"
 
 if [ -f "$POLICIES_FILE" ]; then
     echo -e "${GREEN}✅ Extension policies deployed${NC}"

@@ -3,6 +3,12 @@ profiles.ini
 *.default*/
 *.dev-edition-default*/
 
+# Arkenfox files (downloaded during deployment)
+user.js
+updater.sh
+prefsCleaner.sh
+.arkenfox-version
+
 # Backup Files
 *.backup
 *.backup.*
