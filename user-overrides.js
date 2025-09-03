@@ -7,6 +7,8 @@
  ******/
 
 /*** STARTUP & SESSION ***/
+/* Enable userChrome.css/themes (required for Flexoki UI CSS) */
+user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);
 /* Enable session restore - remember tabs on restart */
 user_pref("browser.startup.page", 3); // 3=resume previous session
 /* Keep the blank page from arkenfox - comment out to use Firefox Home */

@@ -21,7 +21,9 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     OS="macos"
     FIREFOX_APP="/Applications/Firefox.app"
     FIREFOX_BIN="$FIREFOX_APP/Contents/MacOS/firefox"
-    DISTRIBUTION_DIR="${FIREFOX_APP}/Contents/Resources/distribution"
+    # On macOS, prefer system-wide distribution outside the app bundle to avoid code-signing/SIP issues
+    DISTRIBUTION_DIR_MACOS_PRIMARY="/Library/Application Support/Firefox/distribution"
+    DISTRIBUTION_DIR_MACOS_FALLBACK="${FIREFOX_APP}/Contents/Resources/distribution"
     PROFILES_DIR="$HOME/Library/Application Support/Firefox/Profiles"
 elif [[ -f "/etc/arch-release" ]]; then
     OS="arch"
@@ -134,11 +136,22 @@ else  # Arch
     fi
 fi
 
-echo "This step requires sudo to write to Firefox distribution directory."
-echo "Files being copied:"
-echo "  Source: $POLICIES_FILE"
-echo "  Destination: ${DISTRIBUTION_DIR}/policies.json"
-echo ""
+# Determine destination(s)
+if [[ "$OS" == "macos" ]]; then
+    echo "This step requires sudo to write a policies.json for Firefox."
+    echo "Files being copied:"
+    echo "  Source: $POLICIES_FILE"
+    echo "  Destinations (first writable will be used):"
+    echo "    1) ${DISTRIBUTION_DIR_MACOS_PRIMARY}/policies.json (recommended)"
+    echo "    2) ${DISTRIBUTION_DIR_MACOS_FALLBACK}/policies.json"
+    echo ""
+else
+    echo "This step requires sudo to write to Firefox distribution directory."
+    echo "Files being copied:"
+    echo "  Source: $POLICIES_FILE"
+    echo "  Destination: ${DISTRIBUTION_DIR}/policies.json"
+    echo ""
+fi
 read -p "Continue with sudo? (y/n): " -n 1 -r
 echo
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
@@ -146,20 +159,43 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     exit 1
 fi
 
-echo "Creating distribution directory..."
-sudo mkdir -p "$DISTRIBUTION_DIR"
-
-echo "Copying extension policies..."
-sudo cp "$POLICIES_FILE" "${DISTRIBUTION_DIR}/policies.json"
-sudo chmod 644 "${DISTRIBUTION_DIR}/policies.json"
-
 if [[ "$OS" == "macos" ]]; then
-    sudo chown root:wheel "${DISTRIBUTION_DIR}/policies.json"
-else  # Arch
+    # Try primary system-wide path first, then fallback into app bundle
+    DEPLOYED=false
+    for TARGET_DIR in "$DISTRIBUTION_DIR_MACOS_PRIMARY" "$DISTRIBUTION_DIR_MACOS_FALLBACK"; do
+        echo "Creating distribution directory: $TARGET_DIR"
+        if sudo mkdir -p "$TARGET_DIR" 2>/dev/null; then
+            echo "Copying extension policies to: $TARGET_DIR"
+            if sudo cp "$POLICIES_FILE" "${TARGET_DIR}/policies.json" 2>/dev/null; then
+                sudo chmod 644 "${TARGET_DIR}/policies.json" || true
+                sudo chown root:wheel "${TARGET_DIR}/policies.json" || true
+                echo -e "${GREEN}OK: Extension policies deployed: ${TARGET_DIR}/policies.json${NC}"
+                DEPLOYED=true
+                break
+            else
+                echo -e "${ORANGE}Warning: Copy to $TARGET_DIR failed. Trying next location...${NC}"
+            fi
+        else
+            echo -e "${ORANGE}Warning: Could not create $TARGET_DIR. Trying next location...${NC}"
+        fi
+    done
+    if [ "$DEPLOYED" = false ]; then
+        echo -e "${RED}ERROR: Failed to deploy policies.json to both macOS locations.${NC}"
+        echo "You can manually try:"
+        echo "  sudo mkdir -p '/Library/Application Support/Firefox/distribution'"
+        echo "  sudo cp '$POLICIES_FILE' '/Library/Application Support/Firefox/distribution/policies.json'"
+        echo "If that fails, ensure Firefox isn't running and that SIP isn't blocking writes."
+        exit 1
+    fi
+else
+    echo "Creating distribution directory..."
+    sudo mkdir -p "$DISTRIBUTION_DIR"
+    echo "Copying extension policies..."
+    sudo cp "$POLICIES_FILE" "${DISTRIBUTION_DIR}/policies.json"
+    sudo chmod 644 "${DISTRIBUTION_DIR}/policies.json"
     sudo chown root:root "${DISTRIBUTION_DIR}/policies.json"
+    echo -e "${GREEN}OK: Extension policies deployed securely!${NC}"
 fi
-
-echo -e "${GREEN}OK: Extension policies deployed securely!${NC}"
 
 #########################
 # 2. ARKENFOX USER.JS   #
@@ -278,33 +314,37 @@ echo -e "${ORANGE}Step 4: Setting up Flexoki Theme (userChrome.css)...${NC}"
 CHROME_DIR="$PROFILE_DIR/chrome"
 mkdir -p "$CHROME_DIR"
 
-# Detect current system theme preference (default to dark)
-THEME_FILE="userChrome-flexoki-dark.css"
-if [ -f "$HOME/.config/themes/current" ]; then
-    if grep -q "light" "$HOME/.config/themes/current" 2>/dev/null; then
-        THEME_FILE="userChrome-flexoki-light.css"
-        echo "System theme detected: Light"
+# Prefer auto-switching theme when available; fallback to static selection
+AUTO_THEME_FILE="userChrome-flexoki-auto.css"
+if [ -f "${SCRIPT_DIR}/${AUTO_THEME_FILE}" ]; then
+    cp "${SCRIPT_DIR}/${AUTO_THEME_FILE}" "${CHROME_DIR}/userChrome.css"
+    echo "Installed auto-switching Flexoki theme (follows system light/dark)"
+else
+    # Detect current system theme preference (default to dark)
+    THEME_FILE="userChrome-flexoki-dark.css"
+    if [ -f "$HOME/.config/themes/current" ]; then
+        if grep -q "light" "$HOME/.config/themes/current" 2>/dev/null; then
+            THEME_FILE="userChrome-flexoki-light.css"
+            echo "System theme detected: Light"
+        else
+            echo "System theme detected: Dark"
+        fi
     else
-        echo "System theme detected: Dark"
+        echo "No system theme preference found, defaulting to dark"
     fi
-else
-    echo "No system theme preference found, defaulting to dark"
+
+    # Copy the appropriate theme file
+    if [ -f "${SCRIPT_DIR}/${THEME_FILE}" ]; then
+        cp "${SCRIPT_DIR}/${THEME_FILE}" "${CHROME_DIR}/userChrome.css"
+        echo -e "${GREEN}OK: Flexoki theme installed!${NC}"
+    else
+        echo -e "${ORANGE}Warning: Theme file not found: ${THEME_FILE}${NC}"
+        echo "Skipping theme installation..."
+    fi
 fi
 
-# Copy the appropriate theme file
-if [ -f "${SCRIPT_DIR}/${THEME_FILE}" ]; then
-    cp "${SCRIPT_DIR}/${THEME_FILE}" "${CHROME_DIR}/userChrome.css"
-    echo -e "${GREEN}OK: Flexoki theme installed!${NC}"
-else
-    echo -e "${ORANGE}Warning: Theme file not found: ${THEME_FILE}${NC}"
-    echo "Skipping theme installation..."
-fi
-
-# Enable userChrome.css in user.js (if not already present)
-if ! grep -q "toolkit.legacyUserProfileCustomizations.stylesheets" "$PROFILE_DIR/user.js" 2>/dev/null; then
-    echo 'user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);' >> "$PROFILE_DIR/user-overrides.js"
-    echo "Enabled custom stylesheets in user-overrides.js"
-fi
+# userChrome.css pref is set via repository user-overrides.js appended by updater.sh
+# We verify below and instruct if missing.
 
 #########################
 # 5. VERIFICATION       #
@@ -335,14 +375,25 @@ else
     echo -e "${RED}✗ user.js deployment failed${NC}"
 fi
 
-if [ -f "${DISTRIBUTION_DIR}/policies.json" ]; then
+# Verify extension policies
+POLICY_PATH=""
+if [[ "$OS" == "macos" ]]; then
+    if [ -f "${DISTRIBUTION_DIR_MACOS_PRIMARY}/policies.json" ]; then
+        POLICY_PATH="${DISTRIBUTION_DIR_MACOS_PRIMARY}/policies.json"
+    elif [ -f "${DISTRIBUTION_DIR_MACOS_FALLBACK}/policies.json" ]; then
+        POLICY_PATH="${DISTRIBUTION_DIR_MACOS_FALLBACK}/policies.json"
+    fi
+else
+    POLICY_PATH="${DISTRIBUTION_DIR}/policies.json"
+fi
+
+if [ -n "$POLICY_PATH" ] && [ -f "$POLICY_PATH" ]; then
     echo -e "${GREEN}✓ Extension policies deployed${NC}"
-    
     # Count extensions if possible
     if command -v python3 >/dev/null 2>&1; then
         ext_count=$(python3 -c "
 import json
-with open('${DISTRIBUTION_DIR}/policies.json') as f:
+with open('${POLICY_PATH}') as f:
     data = json.load(f)
     extensions = data.get('policies', {}).get('ExtensionSettings', {})
     count = len([k for k in extensions.keys() if k != '*'])
@@ -353,13 +404,22 @@ with open('${DISTRIBUTION_DIR}/policies.json') as f:
         fi
     fi
 else
-    echo -e "${RED}✗ Extension policies deployment failed${NC}"
+    echo -e "${RED}✗ Extension policies deployment not found${NC}"
 fi
 
 if [ -f "${CHROME_DIR}/userChrome.css" ]; then
     echo -e "${GREEN}✓ Flexoki theme deployed${NC}"
 else
     echo -e "${ORANGE}⚠ Theme not installed${NC}"
+fi
+
+# Verify userChrome.css pref is enabled
+if grep -q "toolkit.legacyUserProfileCustomizations.stylesheets" "$PROFILE_DIR/user.js" 2>/dev/null \
+   || grep -q "toolkit.legacyUserProfileCustomizations.stylesheets" "$PROFILE_DIR/prefs.js" 2>/dev/null; then
+    echo -e "${GREEN}✓ userChrome.css enabled via pref${NC}"
+else
+    echo -e "${ORANGE}⚠ userChrome.css pref not detected; it should be set by user-overrides.js${NC}"
+    echo "  If missing, re-run the updater step or set it in about:config."
 fi
 
 #########################

@@ -69,9 +69,10 @@ Configured via `your-extensions-policies.json`:
 
 ### Theme
 Flexoki color scheme (warm, paper-inspired):
-- Dark variant: `#100F0F` background
-- Light variant: `#FFFCF0` background
-- Applied via userChrome.css
+- Auto: `userChrome-flexoki-auto.css` follows system light/dark via `prefers-color-scheme`
+- Dark: `#100F0F` background (`userChrome-flexoki-dark.css`)
+- Light: `#FFFCF0` background (`userChrome-flexoki-light.css`)
+- Applied via `userChrome.css` in your profile's `chrome/` directory
 
 ## File Structure
 
@@ -80,6 +81,7 @@ Repository:
 ├── user-overrides.js                # Your custom preferences
 ├── your-extensions-policies.json    # Extension configuration
 ├── deploy.sh                        # Installation & verification script
+├── userChrome-flexoki-auto.css      # Auto theme (light/dark via system)
 ├── userChrome-flexoki-dark.css     # Dark theme
 └── userChrome-flexoki-light.css    # Light theme
 
@@ -109,7 +111,7 @@ Downloaded (not tracked):
    - Profile creation if Firefox never launched
    - Arkenfox download and setup
    - Extension policy deployment (requires sudo)
-   - Theme installation
+   - Theme installation (auto-switching if available)
    - Automatic verification of deployment
 4. Launch Firefox - extensions install on first run
 
@@ -119,8 +121,15 @@ The deploy script automatically verifies the installation.
 
 For manual verification in Firefox:
 - `about:config` - Check key preferences
+- Settings → General → Website appearance: set “Automatic” to let sites follow light/dark
 - `about:debugging` - Verify extensions
 - `about:profiles` - Confirm correct profile
+
+### Auto Light/Dark Switching
+
+- The deploy script installs `userChrome-flexoki-auto.css` as `userChrome.css` when present.
+- Firefox UI switches live with your OS appearance on macOS and most modern Linux DEs.
+- If your Linux DE doesn’t propagate `prefers-color-scheme`, the script falls back to a static theme based on `~/.config/themes/current` containing the word "light" or defaults to dark.
 
 ## Maintenance
 
@@ -230,9 +239,10 @@ This maintains arkenfox's security improvements while preserving customizations.
 ### Policy Deployment
 
 Extension policies use Firefox's enterprise policy system:
-- Policies deployed to distribution directory
-- Requires sudo/admin access
-- Applies to all Firefox profiles on system
+- macOS (preferred): `/Library/Application Support/Firefox/distribution/policies.json`
+- macOS (alt within app): `/Applications/Firefox.app/Contents/Resources/distribution/policies.json`
+- Arch Linux: `/usr/lib/firefox/distribution/policies.json`
+- Requires sudo/admin access; applies to all profiles on the system
 
 ### Profile Management
 
