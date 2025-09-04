@@ -1,0 +1,226 @@
+/*
+ * Flexoki Auto Theme for Firefox
+ * A warm, paper-inspired color scheme that switches automatically
+ * between light and dark based on system preference
+ * Colors based on: https://github.com/kepano/flexoki
+ */
+
+/* Base colors for dark theme (default) */
+:root {
+  /* Main colors - Dark */
+  --flexoki-bg: #100F0F;           /* Paper black */
+  --flexoki-ui: #1C1B1A;          /* Dark brown for UI elements */
+  --flexoki-text: #CECDC3;        /* Warm white for text */
+  --flexoki-text-2: #B7B5AC;      /* Muted text */
+  --flexoki-border: #282726;      /* Subtle borders */
+  
+  /* Accent colors */
+  --flexoki-orange: #D0A215;      /* Orange accent */
+  --flexoki-red: #AF3029;         /* Red accent */
+  --flexoki-blue: #4385BE;        /* Blue accent */
+  --flexoki-green: #66800B;       /* Green accent */
+  --flexoki-purple: #A02F6F;      /* Purple accent */
+  
+  /* UI states */
+  --flexoki-hover: #343331;       /* Hover state */
+  --flexoki-active: #403E3C;      /* Active state */
+  --flexoki-selection: #D0A21540; /* Selection background */
+}
+
+/* Light theme colors when system prefers light */
+@media (prefers-color-scheme: light) {
+  :root {
+    /* Main colors - Light */
+    --flexoki-bg: #FFFCF0;        /* Paper white */
+    --flexoki-ui: #F2F0E5;        /* Light tan for UI elements */
+    --flexoki-text: #1C1B1A;      /* Dark brown for text */
+    --flexoki-text-2: #403E3C;    /* Muted text */
+    --flexoki-border: #E6E4D9;    /* Subtle borders */
+    
+    /* Accent colors adjusted for light theme */
+    --flexoki-orange: #BC5215;    /* Orange accent (darker for light theme) */
+    --flexoki-red: #D14D41;       /* Red accent */
+    --flexoki-blue: #4385BE;      /* Blue accent */
+    --flexoki-green: #879A39;     /* Green accent */
+    --flexoki-purple: #CE5D97;    /* Purple accent */
+    
+    /* UI states */
+    --flexoki-hover: #E6E4D9;     /* Hover state */
+    --flexoki-active: #DACEB3;    /* Active state */
+    --flexoki-selection: #BC521540; /* Selection background */
+  }
+}
+
+/* Browser chrome background */
+#main-window,
+#navigator-toolbox,
+#nav-bar,
+#PersonalToolbar,
+#TabsToolbar {
+  background-color: var(--flexoki-bg) !important;
+  color: var(--flexoki-text) !important;
+}
+
+/* Tabs styling */
+.tabbrowser-tab {
+  background-color: var(--flexoki-ui) !important;
+  border-color: var(--flexoki-border) !important;
+}
+
+.tabbrowser-tab[selected="true"] {
+  background-color: var(--flexoki-active) !important;
+  color: var(--flexoki-text) !important;
+}
+
+.tabbrowser-tab:hover:not([selected="true"]) {
+  background-color: var(--flexoki-hover) !important;
+}
+
+/* Tab text */
+.tab-text {
+  color: var(--flexoki-text) !important;
+}
+
+.tabbrowser-tab[selected="true"] .tab-text {
+  color: var(--flexoki-text) !important;
+  font-weight: 500;
+}
+
+/* Close button */
+.tab-close-button {
+  color: var(--flexoki-text-2) !important;
+}
+
+.tab-close-button:hover {
+  background-color: var(--flexoki-red) !important;
+  color: var(--flexoki-bg) !important;
+}
+
+/* Address bar (URL bar) */
+#urlbar,
+#urlbar-background,
+#searchbar {
+  background-color: var(--flexoki-ui) !important;
+  border-color: var(--flexoki-border) !important;
+  color: var(--flexoki-text) !important;
+}
+
+#urlbar[focused="true"] {
+  border-color: var(--flexoki-orange) !important;
+}
+
+/* Bookmarks toolbar */
+#PersonalToolbar {
+  background-color: var(--flexoki-bg) !important;
+  border-bottom: 1px solid var(--flexoki-border) !important;
+}
+
+.bookmark-item {
+  color: var(--flexoki-text) !important;
+}
+
+.bookmark-item:hover {
+  background-color: var(--flexoki-hover) !important;
+  color: var(--flexoki-text) !important;
+}
+
+/* Toolbar buttons */
+toolbarbutton {
+  color: var(--flexoki-text) !important;
+}
+
+toolbarbutton:hover {
+  background-color: var(--flexoki-hover) !important;
+}
+
+toolbarbutton[open="true"],
+toolbarbutton[checked="true"] {
+  background-color: var(--flexoki-active) !important;
+}
+
+/* Menu buttons */
+#PanelUI-button {
+  background-color: transparent !important;
+}
+
+#PanelUI-button:hover {
+  background-color: var(--flexoki-hover) !important;
+}
+
+/* Sidebar (for vertical tabs) */
+#sidebar-box,
+#sidebar,
+#sidebar-header {
+  background-color: var(--flexoki-bg) !important;
+  border-right: 1px solid var(--flexoki-border) !important;
+  color: var(--flexoki-text) !important;
+}
+
+/* Sidebar vertical tabs */
+#sidebar .tree-rows {
+  background-color: var(--flexoki-bg) !important;
+}
+
+#sidebar .tree-rows > * {
+  color: var(--flexoki-text) !important;
+}
+
+#sidebar .tree-rows > *[selected="true"] {
+  background-color: var(--flexoki-orange) !important;
+  color: var(--flexoki-bg) !important;
+}
+
+#sidebar .tree-rows > *:hover:not([selected="true"]) {
+  background-color: var(--flexoki-hover) !important;
+}
+
+/* Dropdown menus and panels */
+menupopup,
+panel {
+  background-color: var(--flexoki-ui) !important;
+  border-color: var(--flexoki-border) !important;
+  color: var(--flexoki-text) !important;
+}
+
+menuitem {
+  color: var(--flexoki-text) !important;
+}
+
+menuitem:hover {
+  background-color: var(--flexoki-orange) !important;
+  color: var(--flexoki-bg) !important;
+}
+
+/* Scrollbars */
+scrollbar {
+  background-color: var(--flexoki-bg) !important;
+}
+
+scrollbar thumb {
+  background-color: var(--flexoki-border) !important;
+}
+
+scrollbar thumb:hover {
+  background-color: var(--flexoki-text-2) !important;
+}
+
+/* Status panel (URL preview) */
+#statuspanel {
+  background-color: var(--flexoki-ui) !important;
+  border: 1px solid var(--flexoki-border) !important;
+  color: var(--flexoki-text) !important;
+}
+
+/* Find bar */
+findbar {
+  background-color: var(--flexoki-ui) !important;
+  border-color: var(--flexoki-border) !important;
+  color: var(--flexoki-text) !important;
+}
+
+/* Notification bars */
+notification {
+  background-color: var(--flexoki-ui) !important;
+  border-color: var(--flexoki-border) !important;
+  color: var(--flexoki-text) !important;
+}
