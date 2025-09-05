@@ -205,7 +205,7 @@ if [ ! -d "$PROFILES_DIR" ]; then
     if [[ "$OS" == "macos" ]]; then
         "$FIREFOX_BIN" -CreateProfile "$PROFILE_NAME $PROFILE_DIR" 2>/dev/null || true
     else  # Arch
-        firefox -CreateProfile "$PROFILE_NAME $PROFILE_DIR" 2>/dev/null || true
+        "$FIREFOX_BIN" -CreateProfile "$PROFILE_NAME $PROFILE_DIR" 2>/dev/null || true
     fi
     
     # Create profiles.ini if it doesn't exist
