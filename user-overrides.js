@@ -107,19 +107,30 @@ user_pref("browser.tabs.closeWindowWithLastTab", false); // Keep Firefox open wi
 user_pref("browser.tabs.crashReporting.sendReport", false); // Don't send tab crash reports
 user_pref("browser.bookmarks.openInTabClosesMenu", false); // Keep bookmark menu open after clicking
 
-/* Enable Mozilla's Native Vertical Tabs */
+/* Enable Mozilla's Native Vertical Tabs - Based on your actual prefs */
 user_pref("sidebar.revamp", true); // Enable new sidebar design
 user_pref("sidebar.verticalTabs", true); // Enable vertical tabs
+user_pref("sidebar.position_start", true); // Sidebar on left side
+user_pref("sidebar.visibility", "expand-on-hover"); // Expand sidebar on hover
 
-/* Speed up sidebar animations */
+/* Sidebar animations and behavior */
 user_pref("sidebar.animation.expand-on-hover.duration-ms", 0); // Instant sidebar hover - no animation
+user_pref("sidebar.animation.enabled", true); // Enable sidebar animations
+user_pref("sidebar.animation.duration-ms", 200); // Animation duration
+user_pref("sidebar.expandOnHover", true); // Expand on hover
 
-/* Remove Sidebar Panels - REAL PREFS ONLY */
+/* Remove Sidebar Panels - Based on your actual prefs */
 user_pref("browser.ml.chat.enabled", false); // Remove AI chatbot
 user_pref("browser.ml.enable", false); // Kill all AI features
+user_pref("browser.ml.chat.sidebar", false); // No AI chat in sidebar
 
-/* Disable sync features that add sidebar panels */
-user_pref("services.sync.engine.tabs", false); // No synced tabs
+/* Sidebar panel controls */
+user_pref("sidebar.old-sidebar.has-used", false); // Don't show old sidebar
+user_pref("sidebar.new-sidebar.has-used", true); // Use new sidebar
+user_pref("sidebar.notification.badge.aichat", false); // No AI chat badge notifications
+
+/* Disable Firefox Tools in sidebar */
+user_pref("services.sync.engine.tabs", false); // No synced tabs in sidebar
 user_pref("browser.tabs.firefox-view", false); // No Firefox View
 
 /* The truth: Mozilla's vertical tabs are new and the sidebar cleanup prefs might not exist yet */
