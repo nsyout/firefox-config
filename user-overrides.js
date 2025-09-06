@@ -64,8 +64,12 @@ user_pref("browser.urlbar.suggest.searches", true);
 /* Show bookmarks toolbar */
 user_pref("browser.toolbars.bookmarks.visibility", "always");
 
-/* Downloads - Save directly to Downloads folder */
+/* Downloads - Based on your active profile settings */
 user_pref("browser.download.useDownloadDir", true); // Don't ask where to save (override arkenfox default)
+user_pref("browser.download.alwaysOpenPanel", false); // Don't auto-open download panel
+user_pref("browser.download.always_ask_before_handling_new_types", true); // Ask about new file types
+user_pref("browser.download.start_downloads_in_tmp_dir", true); // Use temp dir for downloads
+user_pref("browser.download.manager.addToRecentDocs", false); // Don't add to recent docs
 
 /* Firefox Home Page - Disable all content sections */
 user_pref("browser.newtabpage.activity-stream.feeds.topsites", false); // No shortcuts
@@ -100,6 +104,7 @@ user_pref("datareporting.healthreport.uploadEnabled", false); // No daily usage 
 user_pref("browser.uidensity", 1); // Compact mode - smaller UI elements
 user_pref("browser.tabs.loadBookmarksInTabs", true); // Open bookmarks in new tab
 user_pref("browser.tabs.closeWindowWithLastTab", false); // Keep Firefox open with no tabs
+user_pref("browser.tabs.crashReporting.sendReport", false); // Don't send tab crash reports
 user_pref("browser.bookmarks.openInTabClosesMenu", false); // Keep bookmark menu open after clicking
 
 /* Enable Mozilla's Native Vertical Tabs */
@@ -120,9 +125,9 @@ user_pref("browser.tabs.firefox-view", false); // No Firefox View
 /* The truth: Mozilla's vertical tabs are new and the sidebar cleanup prefs might not exist yet */
 /* You might need to manually customize the sidebar by right-clicking it */
 
-/* Toolbar Customization - Remove unwanted items */
-// Remove specific toolbar buttons (uncomment ones you want to remove):
-// user_pref("browser.uiCustomization.state", '{"placements":{"widget-overflow-fixed-list":[],"unified-toolbar":["back-button","forward-button","stop-reload-button","urlbar-container","downloads-button","fxa-toolbar-menu-button"],"nav-bar":[],"TabsToolbar":[],"PersonalToolbar":["personal-bookmarks"]},"seen":["developer-button"],"dirtyAreaCache":["unified-toolbar"],"currentVersion":20,"newElementCount":2}'); // Custom toolbar layout
+/* Toolbar Customization - Your current layout */
+user_pref("browser.uiCustomization.state", "{\"placements\":{\"widget-overflow-fixed-list\":[],\"unified-extensions-area\":[\"_3c078156-979c-498b-8990-85f7987dd929_-browser-action\",\"search_kagi_com-browser-action\",\"addon_darkreader_org-browser-action\",\"_531906d3-e22f-4a6c-a102-8057b88a1a63_-browser-action\",\"_2662ff67-b302-4363-95f3-b050218bd72c_-browser-action\",\"_d634138d-c276-4fc8-924b-40a0ea21d284_-browser-action\"],\"nav-bar\":[\"sidebar-button\",\"back-button\",\"forward-button\",\"stop-reload-button\",\"customizableui-special-spring1\",\"vertical-spacer\",\"urlbar-container\",\"ublock0_raymondhill_net-browser-action\",\"customizableui-special-spring2\",\"readeck_readeck_com-browser-action\",\"_61a05c39-ad45-4086-946f-32adb0a40a9d_-browser-action\",\"clipper_obsidian_md-browser-action\",\"harper_writewithharper_com-browser-action\",\"downloads-button\",\"unified-extensions-button\"],\"TabsToolbar\":[],\"vertical-tabs\":[\"tabbrowser-tabs\"],\"PersonalToolbar\":[\"personal-bookmarks\"]},\"seen\":[\"developer-button\",\"screenshot-button\",\"search_kagi_com-browser-action\",\"readeck_readeck_com-browser-action\",\"_61a05c39-ad45-4086-946f-32adb0a40a9d_-browser-action\",\"addon_darkreader_org-browser-action\",\"_531906d3-e22f-4a6c-a102-8057b88a1a63_-browser-action\",\"_2662ff67-b302-4363-95f3-b050218bd72c_-browser-action\",\"clipper_obsidian_md-browser-action\",\"ublock0_raymondhill_net-browser-action\",\"harper_writewithharper_com-browser-action\",\"_d634138d-c276-4fc8-924b-40a0ea21d284_-browser-action\",\"_3c078156-979c-498b-8990-85f7987dd929_-browser-action\"],\"dirtyAreaCache\":[\"nav-bar\",\"vertical-tabs\",\"PersonalToolbar\",\"TabsToolbar\",\"unified-extensions-area\"],\"currentVersion\":23,\"newElementCount\":5}");
+user_pref("browser.uiCustomization.horizontalTabstrip", "[\"tabbrowser-tabs\",\"new-tab-button\"]"); // Backup of horizontal tab layout
 
 /* Common items you can remove from toolbars: */
 // - "home-button" (Home button)
@@ -243,10 +248,16 @@ user_pref("browser.sessionstore.interval", 60000);
 /* Disable automatic session restore after crash */
 user_pref("browser.sessionstore.resume_from_crash", false);
 
-/** OPTIONAL: HTTPS-FIRST MODE **/
-/* Force HTTPS on all sites (may cause some breakage) */
-// user_pref("dom.security.https_first", true);
-// user_pref("dom.security.https_first_schemeless", true);
+/* Content Blocking - Based on your active profile */
+user_pref("browser.contentblocking.category", "strict"); // Use strict content blocking
+
+/* Experimental Features Access */
+user_pref("browser.preferences.experimental.hidden", true); // Show experimental preferences
+
+/** HTTPS-ONLY MODE **/
+/* Force HTTPS on all sites - based on your active profile settings */
+user_pref("dom.security.https_only_mode", true); // Force HTTPS (already active in your profile)
+user_pref("dom.security.https_only_mode_send_http_background_request", false); // No HTTP fallback
 
 /** OPTIONAL: DNS-OVER-HTTPS **/
 /* Enable DoH with Cloudflare (or change provider) */

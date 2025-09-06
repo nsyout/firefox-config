@@ -67,3 +67,7 @@ debug/
 notes.txt
 personal-notes.md
 TODO.md
+
+# Claude Code Files
+CLAUDE.md
+.claude/
