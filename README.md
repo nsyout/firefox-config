@@ -10,7 +10,9 @@ Privacy-hardened Firefox setup using [arkenfox user.js](https://github.com/arken
 ```bash
 git clone <this-repo>
 cd firefox-config
-./deploy.sh
+./deploy.sh              # normal install
+# or
+./deploy.sh --dry-run    # show actions and verify without changes
 ```
 
 The script:
@@ -18,7 +20,6 @@ The script:
 - Creates Firefox profile if needed
 - Installs extension policies
 - Applies custom overrides
-- Sets up Flexoki theme
 
 ## Components
 
@@ -68,10 +69,7 @@ Configured via `your-extensions-policies.json`:
 - Dark Reader - Universal dark mode
 
 ### Theme
-Flexoki color scheme (warm, paper-inspired):
-- Dark variant: `#100F0F` background
-- Light variant: `#FFFCF0` background
-- Applied via userChrome.css
+Firefox uses system Auto theme (light/dark) — no custom `userChrome.css` is deployed.
 
 ## File Structure
 
@@ -80,8 +78,8 @@ Repository:
 ├── user-overrides.js                # Your custom preferences
 ├── your-extensions-policies.json    # Extension configuration
 ├── deploy.sh                        # Installation & verification script
-├── userChrome-flexoki-dark.css     # Dark theme
-└── userChrome-flexoki-light.css    # Light theme
+├── userChrome-flexoki-dark.css      # Optional theme (not deployed)
+└── userChrome-flexoki-light.css     # Optional theme (not deployed)
 
 Downloaded (not tracked):
 ├── user.js                          # Arkenfox base
@@ -109,7 +107,6 @@ Downloaded (not tracked):
    - Profile creation if Firefox never launched
    - Arkenfox download and setup
    - Extension policy deployment (requires sudo)
-   - Theme installation
    - Automatic verification of deployment
 4. Launch Firefox - extensions install on first run
 
@@ -118,7 +115,7 @@ Downloaded (not tracked):
 The deploy script automatically verifies the installation.
 
 For manual verification in Firefox:
-- `about:config` - Check key preferences
+- `about:config` - Check key preferences (e.g., `browser.uidensity`)
 - `about:debugging` - Verify extensions
 - `about:profiles` - Confirm correct profile
 
@@ -188,6 +185,7 @@ about:profiles          # In Firefox
 **Manual install fallback:**
 - Visit extension URLs in `your-extensions-policies.json`
 - Install directly from addons.mozilla.org
+  - macOS note: App updates can overwrite the `distribution/` folder inside the app bundle; if policies disappear after an update, rerun `./deploy.sh`.
 
 ### Site Compatibility
 

@@ -16,6 +16,22 @@ readonly NC='\033[0m' # No Color
 # Script directory
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# Args
+DRY_RUN=false
+while [[ ${1:-} ]]; do
+  case "$1" in
+    --dry-run|-n)
+      DRY_RUN=true
+      shift
+      ;;
+    *)
+      echo "Unknown argument: $1"
+      echo "Usage: $0 [--dry-run|-n]"
+      exit 2
+      ;;
+  esac
+done
+
 # Detect OS
 if [[ "$OSTYPE" == "darwin"* ]]; then
     OS="macos"
@@ -79,23 +95,22 @@ echo -e "${GREEN}OK: Custom configuration files present${NC}"
 
 # Download arkenfox files if not present
 if [ ! -f "${SCRIPT_DIR}/updater.sh" ] || [ ! -f "${SCRIPT_DIR}/prefsCleaner.sh" ]; then
-    echo -e "${ORANGE}Downloading arkenfox files...${NC}"
-    
-    # Download updater.sh
-    echo "Downloading updater.sh..."
-    curl -sL "https://raw.githubusercontent.com/arkenfox/user.js/master/updater.sh" -o "${SCRIPT_DIR}/updater.sh" || {
-        echo -e "${RED}ERROR: Failed to download updater.sh${NC}"
-        exit 1
-    }
-    
-    # Download prefsCleaner.sh
-    echo "Downloading prefsCleaner.sh..."
-    curl -sL "https://raw.githubusercontent.com/arkenfox/user.js/master/prefsCleaner.sh" -o "${SCRIPT_DIR}/prefsCleaner.sh" || {
-        echo -e "${RED}ERROR: Failed to download prefsCleaner.sh${NC}"
-        exit 1
-    }
-    
-    echo -e "${GREEN}OK: Arkenfox files downloaded${NC}"
+    if $DRY_RUN; then
+        echo -e "${ORANGE}[dry-run] Would download arkenfox updater and prefsCleaner${NC}"
+    else
+        echo -e "${ORANGE}Downloading arkenfox files...${NC}"
+        echo "Downloading updater.sh..."
+        curl -sL "https://raw.githubusercontent.com/arkenfox/user.js/master/updater.sh" -o "${SCRIPT_DIR}/updater.sh" || {
+            echo -e "${RED}ERROR: Failed to download updater.sh${NC}"
+            exit 1
+        }
+        echo "Downloading prefsCleaner.sh..."
+        curl -sL "https://raw.githubusercontent.com/arkenfox/user.js/master/prefsCleaner.sh" -o "${SCRIPT_DIR}/prefsCleaner.sh" || {
+            echo -e "${RED}ERROR: Failed to download prefsCleaner.sh${NC}"
+            exit 1
+        }
+        echo -e "${GREEN}OK: Arkenfox files downloaded${NC}"
+    fi
 else
     echo -e "${GREEN}OK: Arkenfox files already present${NC}"
 fi
@@ -124,13 +139,21 @@ readonly POLICIES_FILE="${SCRIPT_DIR}/your-extensions-policies.json"
 # Check Firefox installation
 if [[ "$OS" == "macos" ]]; then
     if [ ! -d "$FIREFOX_APP" ]; then
-        echo -e "${RED}ERROR: Firefox.app not found! Please install Firefox first.${NC}"
-        exit 1
+        if $DRY_RUN; then
+            echo -e "${ORANGE}[dry-run] Firefox.app not found. Would require Firefox installed before copying policies.${NC}"
+        else
+            echo -e "${RED}ERROR: Firefox.app not found! Please install Firefox first.${NC}"
+            exit 1
+        fi
     fi
 else  # Arch
     if [ ! -f "$FIREFOX_BIN" ]; then
-        echo -e "${RED}ERROR: Firefox not found! Install with: sudo pacman -S firefox${NC}"
-        exit 1
+        if $DRY_RUN; then
+            echo -e "${ORANGE}[dry-run] Firefox not found. Would require Firefox installed before copying policies.${NC}"
+        else
+            echo -e "${RED}ERROR: Firefox not found! Install with: sudo pacman -S firefox${NC}"
+            exit 1
+        fi
     fi
 fi
 
@@ -139,27 +162,27 @@ echo "Files being copied:"
 echo "  Source: $POLICIES_FILE"
 echo "  Destination: ${DISTRIBUTION_DIR}/policies.json"
 echo ""
-read -p "Continue with sudo? (y/n): " -n 1 -r
-echo
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "Aborted by user."
-    exit 1
+if $DRY_RUN; then
+    echo -e "${ORANGE}[dry-run] Would prompt for sudo and copy policies.json${NC}"
+else
+    read -p "Continue with sudo? (y/n): " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "Aborted by user."
+        exit 1
+    fi
+    echo "Creating distribution directory..."
+    sudo mkdir -p "$DISTRIBUTION_DIR"
+    echo "Copying extension policies..."
+    sudo cp "$POLICIES_FILE" "${DISTRIBUTION_DIR}/policies.json"
+    sudo chmod 644 "${DISTRIBUTION_DIR}/policies.json"
+    if [[ "$OS" == "macos" ]]; then
+        sudo chown root:wheel "${DISTRIBUTION_DIR}/policies.json"
+    else  # Arch
+        sudo chown root:root "${DISTRIBUTION_DIR}/policies.json"
+    fi
+    echo -e "${GREEN}OK: Extension policies deployed securely!${NC}"
 fi
-
-echo "Creating distribution directory..."
-sudo mkdir -p "$DISTRIBUTION_DIR"
-
-echo "Copying extension policies..."
-sudo cp "$POLICIES_FILE" "${DISTRIBUTION_DIR}/policies.json"
-sudo chmod 644 "${DISTRIBUTION_DIR}/policies.json"
-
-if [[ "$OS" == "macos" ]]; then
-    sudo chown root:wheel "${DISTRIBUTION_DIR}/policies.json"
-else  # Arch
-    sudo chown root:root "${DISTRIBUTION_DIR}/policies.json"
-fi
-
-echo -e "${GREEN}OK: Extension policies deployed securely!${NC}"
 
 #########################
 # 2. ARKENFOX USER.JS   #
@@ -168,17 +191,11 @@ echo -e "${GREEN}OK: Extension policies deployed securely!${NC}"
 echo -e "${ORANGE}Step 2: Setting up Arkenfox user.js...${NC}"
 
 # Make scripts executable
-chmod +x "${SCRIPT_DIR}/updater.sh"
-chmod +x "${SCRIPT_DIR}/prefsCleaner.sh"
-
-# Download initial user.js if not present
-if [ ! -f "${SCRIPT_DIR}/user.js" ]; then
-    echo "Downloading initial arkenfox user.js..."
-    curl -sL "https://raw.githubusercontent.com/arkenfox/user.js/master/user.js" -o "${SCRIPT_DIR}/user.js" || {
-        echo -e "${RED}ERROR: Failed to download user.js${NC}"
-        exit 1
-    }
-    echo -e "${GREEN}OK: Initial user.js downloaded${NC}"
+if ! $DRY_RUN; then
+    chmod +x "${SCRIPT_DIR}/updater.sh"
+    chmod +x "${SCRIPT_DIR}/prefsCleaner.sh"
+else
+    echo -e "${ORANGE}[dry-run] Would chmod +x updater.sh and prefsCleaner.sh${NC}"
 fi
 
 #########################
@@ -190,50 +207,44 @@ echo -e "${ORANGE}Step 3: Setting up Firefox Profile...${NC}"
 # Check if Firefox has been run at least once
 if [ ! -d "$PROFILES_DIR" ]; then
     echo -e "${ORANGE}Firefox profile directory not found.${NC}"
-    echo "Creating initial Firefox profile..."
-    
-    # Create profile directory
-    mkdir -p "$PROFILES_DIR"
-    
-    # Generate a random profile name
-    PROFILE_NAME="default-$(date +%s)"
-    PROFILE_DIR="$PROFILES_DIR/${PROFILE_NAME}.default"
-    
-    echo "Creating new profile: $PROFILE_NAME"
-    
-    # Use Firefox to create profile properly
-    if [[ "$OS" == "macos" ]]; then
+    if $DRY_RUN; then
+        echo -e "${ORANGE}[dry-run] Would create a new default profile and profiles.ini${NC}"
+    else
+        echo "Creating initial Firefox profile..."
+        mkdir -p "$PROFILES_DIR"
+        PROFILE_NAME="default-$(date +%s)"
+        PROFILE_DIR="$PROFILES_DIR/${PROFILE_NAME}.default"
+        echo "Creating new profile: $PROFILE_NAME"
         "$FIREFOX_BIN" -CreateProfile "$PROFILE_NAME $PROFILE_DIR" 2>/dev/null || true
-    else  # Arch
-        "$FIREFOX_BIN" -CreateProfile "$PROFILE_NAME $PROFILE_DIR" 2>/dev/null || true
+        if [ ! -f "$PROFILES_DIR/profiles.ini" ]; then
+            echo "[General]" > "$PROFILES_DIR/profiles.ini"
+            echo "StartWithLastProfile=1" >> "$PROFILES_DIR/profiles.ini"
+            echo "Version=2" >> "$PROFILES_DIR/profiles.ini"
+            echo "" >> "$PROFILES_DIR/profiles.ini"
+            echo "[Profile0]" >> "$PROFILES_DIR/profiles.ini"
+            echo "Name=$PROFILE_NAME" >> "$PROFILES_DIR/profiles.ini"
+            echo "IsRelative=1" >> "$PROFILES_DIR/profiles.ini"
+            echo "Path=${PROFILE_NAME}.default" >> "$PROFILES_DIR/profiles.ini"
+            echo "Default=1" >> "$PROFILES_DIR/profiles.ini"
+        fi
+        echo -e "${GREEN}OK: Profile created${NC}"
     fi
-    
-    # Create profiles.ini if it doesn't exist
-    if [ ! -f "$PROFILES_DIR/profiles.ini" ]; then
-        echo "[General]" > "$PROFILES_DIR/profiles.ini"
-        echo "StartWithLastProfile=1" >> "$PROFILES_DIR/profiles.ini"
-        echo "Version=2" >> "$PROFILES_DIR/profiles.ini"
-        echo "" >> "$PROFILES_DIR/profiles.ini"
-        echo "[Profile0]" >> "$PROFILES_DIR/profiles.ini"
-        echo "Name=$PROFILE_NAME" >> "$PROFILES_DIR/profiles.ini"
-        echo "IsRelative=1" >> "$PROFILES_DIR/profiles.ini"
-        echo "Path=${PROFILE_NAME}.default" >> "$PROFILES_DIR/profiles.ini"
-        echo "Default=1" >> "$PROFILES_DIR/profiles.ini"
-    fi
-    
-    echo -e "${GREEN}OK: Profile created${NC}"
 else
     echo "Firefox profiles directory found."
 fi
 
-# Find the default profile (sanitized)
-PROFILE_DIR=$(find "$PROFILES_DIR" -name "*.default*" -type d -maxdepth 1 | head -1)
-PROFILE_DIR=$(sanitize_path "$PROFILE_DIR")
+# Find the default profile (cross-platform)
+PROFILE_DIR=$(ls -1d "$PROFILES_DIR"/*.default* 2>/dev/null | head -1 || true)
+PROFILE_DIR=$(sanitize_path "${PROFILE_DIR:-}")
 
-if [ -z "$PROFILE_DIR" ] || [ ! -d "$PROFILE_DIR" ]; then
+if [ -z "${PROFILE_DIR:-}" ] || [ ! -d "${PROFILE_DIR:-/nonexistent}" ]; then
     echo -e "${RED}ERROR: No valid default Firefox profile found!${NC}"
-    echo "This script only works with default profiles for security."
-    exit 1
+    if $DRY_RUN; then
+        echo -e "${ORANGE}[dry-run] Skipping updater and profile verification${NC}"
+    else
+        echo "This script only works with default profiles for security."
+        exit 1
+    fi
 fi
 
 echo "Found Firefox profile: $(basename "$PROFILE_DIR")"
@@ -242,7 +253,7 @@ echo "Found Firefox profile: $(basename "$PROFILE_DIR")"
 if pgrep -x "firefox" > /dev/null || pgrep -x "firefox-bin" > /dev/null; then
     echo -e "${RED}ERROR: Firefox is currently running!${NC}"
     echo "Please close Firefox before continuing."
-    exit 1
+    $DRY_RUN || exit 1
 fi
 
 # Final confirmation before modifying profile
@@ -254,63 +265,45 @@ echo "- Install arkenfox user.js (privacy hardening)"
 echo "- Install your custom overrides"
 echo "- Create backups of existing files"
 echo ""
-read -p "Continue? (y/n): " -n 1 -r
-echo
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "Aborted by user."
-    exit 1
+if ! $DRY_RUN; then
+    read -p "Continue? (y/n): " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "Aborted by user."
+        exit 1
+    fi
+else
+    echo -e "${ORANGE}[dry-run] Would proceed to run arkenfox updater${NC}"
 fi
 
-# Run the arkenfox updater with our profile
-echo "Running Arkenfox updater..."
-cd "$SCRIPT_DIR"
-./updater.sh -p "$PROFILE_DIR" -s
+if [ -n "${PROFILE_DIR:-}" ] && [ -d "${PROFILE_DIR:-/nonexistent}" ]; then
+    # Run the arkenfox updater with our profile and overrides
+    echo "Running Arkenfox updater..."
+    cd "$SCRIPT_DIR"
+
+    # Detect ESR and pass -e when appropriate
+    ESR_ARG=""
+    if version_out=$("$FIREFOX_BIN" --version 2>/dev/null); then
+        if echo "$version_out" | grep -qi "ESR"; then
+            ESR_ARG="-e"
+            echo "Detected Firefox ESR; enabling ESR prefs."
+        fi
+    fi
+
+    if $DRY_RUN; then
+        echo -e "${ORANGE}[dry-run] Would execute: ./updater.sh -p \"$PROFILE_DIR\" -s -o \"${SCRIPT_DIR}/user-overrides.js\" ${ESR_ARG}${NC}"
+    else
+        ./updater.sh -p "$PROFILE_DIR" -s -o "${SCRIPT_DIR}/user-overrides.js" ${ESR_ARG}
+    fi
+fi
 
 echo -e "${GREEN}OK: Arkenfox user.js deployed to profile!${NC}"
 
 #########################
-# 4. FLEXOKI THEME      #
+# 4. VERIFICATION       #
 #########################
 
-echo -e "${ORANGE}Step 4: Setting up Flexoki Theme (userChrome.css)...${NC}"
-
-# Create chrome directory in profile
-CHROME_DIR="$PROFILE_DIR/chrome"
-mkdir -p "$CHROME_DIR"
-
-# Detect current system theme preference (default to dark)
-THEME_FILE="userChrome-flexoki-dark.css"
-if [ -f "$HOME/.config/themes/current" ]; then
-    if grep -q "light" "$HOME/.config/themes/current" 2>/dev/null; then
-        THEME_FILE="userChrome-flexoki-light.css"
-        echo "System theme detected: Light"
-    else
-        echo "System theme detected: Dark"
-    fi
-else
-    echo "No system theme preference found, defaulting to dark"
-fi
-
-# Copy the appropriate theme file
-if [ -f "${SCRIPT_DIR}/${THEME_FILE}" ]; then
-    cp "${SCRIPT_DIR}/${THEME_FILE}" "${CHROME_DIR}/userChrome.css"
-    echo -e "${GREEN}OK: Flexoki theme installed!${NC}"
-else
-    echo -e "${ORANGE}Warning: Theme file not found: ${THEME_FILE}${NC}"
-    echo "Skipping theme installation..."
-fi
-
-# Enable userChrome.css in user.js (if not already present)
-if ! grep -q "toolkit.legacyUserProfileCustomizations.stylesheets" "$PROFILE_DIR/user.js" 2>/dev/null; then
-    echo 'user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);' >> "$PROFILE_DIR/user-overrides.js"
-    echo "Enabled custom stylesheets in user-overrides.js"
-fi
-
-#########################
-# 5. VERIFICATION       #
-#########################
-
-echo -e "${ORANGE}Step 5: Verifying deployment...${NC}"
+echo -e "${ORANGE}Step 4: Verifying deployment...${NC}"
 
 # Check that files were actually created
 if [ -f "$PROFILE_DIR/user.js" ]; then
@@ -322,14 +315,11 @@ if [ -f "$PROFILE_DIR/user.js" ]; then
         echo -e "${GREEN}✓ Arkenfox detected (version $version)${NC}"
     fi
     
-    # Check if overrides were merged
-    if grep -q "user-overrides.js" "$PROFILE_DIR/user.js" 2>/dev/null; then
+    # Check for key custom settings from overrides
+    if grep -q "browser.uidensity" "$PROFILE_DIR/user.js" 2>/dev/null; then
         echo -e "${GREEN}✓ User overrides merged${NC}"
-    fi
-    
-    # Check for key custom settings
-    if grep -q "sidebar.verticalTabs" "$PROFILE_DIR/user.js" 2>/dev/null; then
-        echo -e "${GREEN}✓ Custom settings applied${NC}"
+    else
+        echo -e "${ORANGE}⚠ Could not confirm overrides in user.js${NC}"
     fi
 else
     echo -e "${RED}✗ user.js deployment failed${NC}"
@@ -356,14 +346,8 @@ else
     echo -e "${RED}✗ Extension policies deployment failed${NC}"
 fi
 
-if [ -f "${CHROME_DIR}/userChrome.css" ]; then
-    echo -e "${GREEN}✓ Flexoki theme deployed${NC}"
-else
-    echo -e "${ORANGE}⚠ Theme not installed${NC}"
-fi
-
 #########################
-# 6. SUMMARY            #
+# 5. SUMMARY            #
 #########################
 
 echo ""
@@ -376,15 +360,14 @@ echo ""
 echo -e "${ORANGE}Next steps:${NC}"
 echo "1. Launch Firefox - extensions will auto-install"
 echo "2. Verify settings in about:config"
-echo "3. Check vertical tabs in sidebar"
 echo ""
 echo -e "${ORANGE}Manual verification:${NC}"
-echo "- about:config → search 'sidebar.verticalTabs'"
+echo "- about:config → verify a known override (e.g., 'browser.uidensity')"
 echo "- about:policies → check extension policies"
 echo "- about:debugging → verify extensions"
 
 #########################
-# 7. OPTIONAL LAUNCH    #
+# 6. OPTIONAL LAUNCH    #
 #########################
 
 echo ""
