@@ -39,11 +39,14 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     FIREFOX_BIN="$FIREFOX_APP/Contents/MacOS/firefox"
     DISTRIBUTION_DIR="${FIREFOX_APP}/Contents/Resources/distribution"
     PROFILES_DIR="$HOME/Library/Application Support/Firefox/Profiles"
+    # Use profile-based policies on macOS to avoid SIP issues
+    USE_PROFILE_POLICIES=true
 elif [[ -f "/etc/arch-release" ]]; then
     OS="arch"
     FIREFOX_BIN="/usr/bin/firefox"
     DISTRIBUTION_DIR="/usr/lib/firefox/distribution"
     PROFILES_DIR="$HOME/.mozilla/firefox"
+    USE_PROFILE_POLICIES=false
 else
     echo -e "${RED}ERROR: Unsupported OS. Only macOS and Arch Linux are supported.${NC}"
     exit 1
@@ -83,7 +86,7 @@ sanitize_path() {
 echo -e "${ORANGE}Pre-flight Security Checks...${NC}"
 
 # Check for required custom files
-readonly CUSTOM_FILES=("user-overrides.js" "your-extensions-policies.json")
+readonly CUSTOM_FILES=("user-overrides.js" "extension-policy.json")
 for file in "${CUSTOM_FILES[@]}"; do
     if [ ! -f "${SCRIPT_DIR}/$file" ]; then
         echo -e "${RED}ERROR: Required file missing: $file${NC}"
@@ -117,7 +120,7 @@ fi
 
 # Validate policies JSON
 echo "Validating extension policies..."
-validate_json "${SCRIPT_DIR}/your-extensions-policies.json"
+validate_json "${SCRIPT_DIR}/extension-policy.json"
 echo -e "${GREEN}OK: Extension policies JSON is valid${NC}"
 
 # Check if running as root (bad idea)
@@ -134,7 +137,7 @@ fi
 echo -e "${ORANGE}Step 1: Deploying Extension Policies...${NC}"
 echo "Detected OS: $OS"
 
-readonly POLICIES_FILE="${SCRIPT_DIR}/your-extensions-policies.json"
+readonly POLICIES_FILE="${SCRIPT_DIR}/extension-policy.json"
 
 # Check Firefox installation
 if [[ "$OS" == "macos" ]]; then
@@ -157,31 +160,33 @@ else  # Arch
     fi
 fi
 
-echo "This step requires sudo to write to Firefox distribution directory."
-echo "Files being copied:"
-echo "  Source: $POLICIES_FILE"
-echo "  Destination: ${DISTRIBUTION_DIR}/policies.json"
-echo ""
-if $DRY_RUN; then
-    echo -e "${ORANGE}[dry-run] Would prompt for sudo and copy policies.json${NC}"
+if $USE_PROFILE_POLICIES; then
+    echo "Using profile-based policies (macOS SIP workaround)."
+    echo "Policies will be copied to profile directory later."
+    echo -e "${GREEN}OK: Will deploy policies to profile${NC}"
 else
-    read -p "Continue with sudo? (y/n): " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        echo "Aborted by user."
-        exit 1
-    fi
-    echo "Creating distribution directory..."
-    sudo mkdir -p "$DISTRIBUTION_DIR"
-    echo "Copying extension policies..."
-    sudo cp "$POLICIES_FILE" "${DISTRIBUTION_DIR}/policies.json"
-    sudo chmod 644 "${DISTRIBUTION_DIR}/policies.json"
-    if [[ "$OS" == "macos" ]]; then
-        sudo chown root:wheel "${DISTRIBUTION_DIR}/policies.json"
-    else  # Arch
+    echo "This step requires sudo to write to Firefox distribution directory."
+    echo "Files being copied:"
+    echo "  Source: $POLICIES_FILE"
+    echo "  Destination: ${DISTRIBUTION_DIR}/policies.json"
+    echo ""
+    if $DRY_RUN; then
+        echo -e "${ORANGE}[dry-run] Would prompt for sudo and copy policies.json${NC}"
+    else
+        read -p "Continue with sudo? (y/n): " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            echo "Aborted by user."
+            exit 1
+        fi
+        echo "Creating distribution directory..."
+        sudo mkdir -p "$DISTRIBUTION_DIR"
+        echo "Copying extension policies..."
+        sudo cp "$POLICIES_FILE" "${DISTRIBUTION_DIR}/policies.json"
+        sudo chmod 644 "${DISTRIBUTION_DIR}/policies.json"
         sudo chown root:root "${DISTRIBUTION_DIR}/policies.json"
+        echo -e "${GREEN}OK: Extension policies deployed securely!${NC}"
     fi
-    echo -e "${GREEN}OK: Extension policies deployed securely!${NC}"
 fi
 
 #########################
@@ -299,6 +304,19 @@ fi
 
 echo -e "${GREEN}OK: Arkenfox user.js deployed to profile!${NC}"
 
+# Deploy policies to profile if using profile-based policies
+if $USE_PROFILE_POLICIES && [ -n "${PROFILE_DIR:-}" ] && [ -d "${PROFILE_DIR:-/nonexistent}" ]; then
+    echo "Deploying extension policies to profile..."
+    if $DRY_RUN; then
+        echo -e "${ORANGE}[dry-run] Would copy policies.json to profile distribution directory${NC}"
+    else
+        mkdir -p "${PROFILE_DIR}/distribution"
+        cp "$POLICIES_FILE" "${PROFILE_DIR}/distribution/policies.json"
+        chmod 644 "${PROFILE_DIR}/distribution/policies.json"
+        echo -e "${GREEN}OK: Extension policies deployed to profile!${NC}"
+    fi
+fi
+
 #########################
 # 4. VERIFICATION       #
 #########################
@@ -325,14 +343,21 @@ else
     echo -e "${RED}✗ user.js deployment failed${NC}"
 fi
 
-if [ -f "${DISTRIBUTION_DIR}/policies.json" ]; then
+# Check policies location based on deployment method
+if $USE_PROFILE_POLICIES; then
+    POLICIES_LOCATION="${PROFILE_DIR}/distribution/policies.json"
+else
+    POLICIES_LOCATION="${DISTRIBUTION_DIR}/policies.json"
+fi
+
+if [ -f "$POLICIES_LOCATION" ]; then
     echo -e "${GREEN}✓ Extension policies deployed${NC}"
-    
+
     # Count extensions if possible
     if command -v python3 >/dev/null 2>&1; then
         ext_count=$(python3 -c "
 import json
-with open('${DISTRIBUTION_DIR}/policies.json') as f:
+with open('$POLICIES_LOCATION') as f:
     data = json.load(f)
     extensions = data.get('policies', {}).get('ExtensionSettings', {})
     count = len([k for k in extensions.keys() if k != '*'])
